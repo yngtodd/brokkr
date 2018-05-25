@@ -2,4 +2,4 @@
 NVIDIA
 ======
 
-Case study for Pytorch and Nvidia.
+A case study for Pytorch and Nvidia.
