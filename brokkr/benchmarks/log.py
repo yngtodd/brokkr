@@ -1,4 +1,4 @@
-def log_progress(context, epoch, num_epochs, batch, num_samples, timemeter, lossmeter, accuracy=None):
+def log_progress(context, epoch, num_epochs, batch, num_samples, timemeter, lossmeter):
     """
     Prints current values and averages for AverageMeters
     
@@ -28,11 +28,8 @@ def log_progress(context, epoch, num_epochs, batch, num_samples, timemeter, loss
     """
     message = f"{context} Epoch: [{epoch}/{num_epochs}] "\
               f"Batch: [{batch}/{num_samples}] "\
-              f"Time: {timemeter.val:.2f} [{timemeter.avg:.2f}] "\
-              f"Loss: {lossmeter.val:.4f} [{lossmeter.avg:.4f}] "\
+              f"Time: {timemeter.sum:.2f} [{timemeter.avg:.2f}] "\
+              f"Loss: {lossmeter.sum:.4f} [{lossmeter.avg:.4f}] "\
     
-    if accuracy:
-        acc = f"Accuracy: {accuracy}"
-        message += acc
-
-    logger.info(message)
+    print(message)
+#    logger.info(message)

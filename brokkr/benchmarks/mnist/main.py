@@ -10,6 +10,12 @@ from brokkr.benchmarks.mnist.models.onecnn import Net
 from brokkr.benchmarks.mnist.parser import parse_args
 
 import time
+import logging
+import logging.config
+
+
+logging.config.fileConfig('../logging.conf', defaults={'logfilename': './logs/main.log'})
+logger = logging.getLogger(__name__)
 
 
 def train(args, model, device, train_loader, optimizer, epoch, meters):
@@ -17,49 +23,58 @@ def train(args, model, device, train_loader, optimizer, epoch, meters):
     batchtime = meters['traintime']
 
     n_batches = len(train_loader)
-    
+
     model.train()
     end = time.time()
-    with torch.autograd.profiler.emit_nvtx():
-        for batch_idx, (data, target) in enumerate(train_loader):
-            data, target = data.to(device), target.to(device)
-            optimizer.zero_grad()
-            output = model(data)
-            loss = F.nll_loss(output, target)
-            loss.backward()
-            optimizer.step()
-            lossmeter.update(loss.item())
-            batchtime.update(time.time() - end)
-            end = time.time()
-    
-            if batch_idx % args.log_interval == 0:
-                log_progress('Train', epoch, args.epochs, batch_idx, n_batches, batchtime, lossmeter)
+    #with torch.autograd.profiler.emit_nvtx():
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        optimizer.step()
+        lossmeter.update(loss.item())
+        batchtime.update(time.time() - end)
+        end = time.time()
+
+        if batch_idx % args.log_interval == 0:
+            log_progress('Train', epoch, args.epochs, batch_idx, n_batches, batchtime, lossmeter)
+
+    lossmeter.reset()
+    batchtime.reset()
 
 
-def test(args, model, device, test_loader, meters):
+def test(args, model, device, test_loader, epoch, meters):
     lossmeter = meters['testloss']
     batchtime = meters['testtime']
 
     n_samples = len(test_loader.dataset)
+    n_batches = len(test_loader)
 
     model.eval()
     test_loss = 0
     correct = 0
     end = time.time()
     with torch.no_grad():
-        for data, target in test_loader:
+        for batch_idx, (data, target) in enumerate(test_loader):
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, size_average=False).item() # sum up batch loss
+            loss = F.nll_loss(output, target, size_average=False).item() # sum up batch loss
+            test_loss += loss
             pred = output.max(1, keepdim=True)[1] # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
-            lossmeter.update(loss.item())
+            lossmeter.update(loss)
             batchtime.update(time.time() - end)
             end = time.time()
-            accuracy = 100. * correct / n_samples 
+            accuracy = 100. * correct / n_samples
 
             if batch_idx % args.log_interval == 0:
-                log_progress('Train', epoch, args.epochs, batch_idx, n_batches, batchtime, lossmeter, accuracy)
+                log_progress('Test', epoch, args.epochs, batch_idx, n_batches, batchtime, lossmeter)
+
+    lossmeter.reset()
+    batchtime.reset()
+    print(f'\nEpoch: {epoch}, Test Accuracy: {accuracy}\n')
 
 
 def main():
@@ -83,8 +98,8 @@ def main():
     }
 
     test_meters = {
-      'test_loss': AverageMeter(name='testloss'),
-      'test_time': AverageMeter(name='testtime'),
+      'testloss': AverageMeter(name='testloss'),
+      'testtime': AverageMeter(name='testtime'),
     }
 
     runtime = AverageMeter(name='runtime')
@@ -92,11 +107,11 @@ def main():
     end = time.time()
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch, train_meters)
-        test(args, model, device, test_loader, test_meters)
+        test(args, model, device, test_loader, epoch, test_meters)
         runtime.update(time.time() - end)
         end = time.time()
 
-    print(f"\nJob's done! Total runtime: {runtime.sum}, Average runtime: {runtime.avg}")
+    print(f"Job's done! Total runtime: {runtime.sum} seconds, Average epoch runtime: {runtime.avg} seconds")
 
 
 if __name__=="__main__":

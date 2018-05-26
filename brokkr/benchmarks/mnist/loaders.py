@@ -34,4 +34,6 @@ class MNISTLoaders:
                        ])
             ),
             batch_size=self.batch_size, shuffle=True, **kwargs
-          )
+        )
+
+        return loader
