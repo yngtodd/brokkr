@@ -14,10 +14,6 @@ import logging
 import logging.config
 
 
-logging.config.fileConfig('../logging.conf', defaults={'logfilename': './logs/main.log'})
-logger = logging.getLogger(__name__)
-
-
 def train(args, model, device, train_loader, optimizer, epoch, meters):
     lossmeter = meters['trainloss']
     batchtime = meters['traintime']
