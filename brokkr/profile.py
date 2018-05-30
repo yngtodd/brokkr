@@ -5,25 +5,27 @@ import subprocess
 
 def run_nvprof(program, path, filename, single_p=False, half_p=False):
     """Run Nvidia's profiler"""
-    if single_p and half_p: 
-        logfile = subprocess.Popen(
-          ['nvprof', '--metrics', 'flop_count_sp', 'flop_count_hp', \
-           '--logfile', logname, 'python', program]
+    print('Running Nvidia Profiler!')
+    if single_p and half_p:
+        logfile = subprocess.call(
+          ['nvprof', '--metrics', 'flop_count_sp', 'flop_count_hp',
+           '--log-file', filename, 'python', program], shell=True
         )
     elif single_p:
-        logfile = subprocess.Popen(
-          ['nvprof', '--metrics', 'flop_count_sp', \
-           '--logfile', logname, 'python', program]
+        logfile = subprocess.call(
+          ['nvprof', '--metrics', 'flop_count_sp',
+           '--log-file', filename, 'python', program], shell=True
         )
     elif half_p:
-        logfile = subprocess.Popen(
-          ['nvprof', '--metrics', 'flop_count_hp', \
-           '--logfile', logname, 'python', program]
+        logfile = subprocess.call(
+          ['nvprof', '--metrics', 'flop_count_hp',
+           '--log-file', filename, 'python', program], shell=True
         )
     else:
         raise ValueError("Must specify at least one measure to profile! "
                          "Single precision: {}, Half precision: {}".format(single_p, half_p))
-                         
+    print('finished profiling')
+    print(logfile)
     filepath = os.path.join(path, filename)
 
     with open(filepath, 'w') as f:
@@ -33,7 +35,7 @@ def run_nvprof(program, path, filename, single_p=False, half_p=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description="Running Nvidia's profiler.")
     parser.add_argument('--program', type=str,
                         help='Name of python file to be profiled')
     parser.add_argument('--path', type=str,
@@ -45,7 +47,12 @@ def main():
     parser.add_argument('--hp', action='store_true',
                         help='count half precision floating point operations')
     args = parser.parse_args()
+    print('kicking off')
 
     logfile = run_nvprof(
-      program=args.program, path=args.path, filename=args.filename, single_p=args.single_p, half_p=args.half_p
+      program=args.program, path=args.path, filename=args.filename, single_p=args.sp, half_p=args.sp
     )
+
+
+if __name__=="__main__":
+    main()
